@@ -92,8 +92,18 @@ public final class Monitor {
     }
 
     /// Takes one sample synchronously on the calling thread. Useful for tests and the first paint.
+    /// Not safe to mix with `start()`: the readers keep per-call state and expect one caller.
     public func sampleNow() {
         apply(sampler.sample())
+    }
+
+    /// Schedules an extra sample on the sampling queue, ahead of the next timer tick. Used when
+    /// the panel opens so delta-based readers (processes) prime without waiting a full interval.
+    public func kick() {
+        queue.async { [sampler, weak self] in
+            let result = sampler.sample()
+            Task { @MainActor in self?.apply(result) }
+        }
     }
 
     private func schedule() {

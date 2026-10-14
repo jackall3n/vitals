@@ -201,6 +201,12 @@ struct DashboardView: View {
                     Text("\(p.processCount) processes")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
+                } else {
+                    // Process CPU needs two samples; the first arrives within a second of opening.
+                    Text("Sampling…")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
                 }
             }
         }

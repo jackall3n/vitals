@@ -98,6 +98,7 @@ public final class StatusItemController {
         guard !panel.isShown, let button = statusItem.button else { return }
         button.highlight(true)
         monitor.includeProcesses = true
+        monitor.kick()
         panel.show(under: button)
     }
 

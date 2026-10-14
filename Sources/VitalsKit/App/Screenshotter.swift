@@ -29,7 +29,7 @@ enum Screenshotter {
         statusItem.showPanel()
         NSLog("Screenshotter: panel shown, visible=\(statusItem.panelWindow.isVisible) frame=\(statusItem.panelWindow.frame)")
         // Give SwiftUI a moment to lay out charts before capturing, then do the same for settings.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             capturePanel(statusItem, prefix: "panel", into: dir)
             statusItem.panelHost.showingSettings = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
