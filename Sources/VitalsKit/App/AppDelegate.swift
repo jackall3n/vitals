@@ -19,6 +19,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         // Development hooks: `-ShowPanel YES` opens the panel on launch; `-Screenshot <dir>` renders
         // the indicator and panel to PNGs in <dir> and quits; `-LoginItemStatus YES` prints the
         // SMAppService registration state and quits.
+        if UserDefaults.standard.bool(forKey: "UnregisterLoginItem") {
+            do { try LoginItem.setEnabled(false); print("unregistered, status=\(LoginItem.status)") }
+            catch { print("unregister failed: \(error)") }
+            exit(0)
+        }
         if UserDefaults.standard.bool(forKey: "LoginItemStatus") {
             print("bundle=\(Bundle.main.bundleURL.path) fromBundle=\(LoginItem.isRunningFromBundle) " +
                   "setting=\(settings.openAtLogin) status=\(LoginItem.status) enabled=\(LoginItem.isEnabled)")
@@ -28,7 +33,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [self] in statusItem.showPanel() }
         }
         if let dir = UserDefaults.standard.string(forKey: "Screenshot") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [self] in
+            // `-ScreenshotDelay <seconds>` lets the graphs accumulate history first.
+            let delay = max(2.5, UserDefaults.standard.double(forKey: "ScreenshotDelay"))
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [self] in
                 Screenshotter.run(into: dir, statusItem: statusItem)
             }
         }
@@ -59,12 +66,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             try LoginItem.setEnabled(settings.openAtLogin)
         } catch {
-            NSLog("RunCat: could not update login item: \(error)")
+            NSLog("Vitals: could not update login item: \(error)")
         }
     }
 }
 
-public enum RunCatApp {
+public enum VitalsApp {
     /// Runs the application. Never returns.
     @MainActor
     public static func main() {

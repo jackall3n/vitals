@@ -1,11 +1,11 @@
 import Foundation
 import Testing
-@testable import RunCatKit
+@testable import VitalsKit
 
 @Suite struct SettingsTests {
     /// A throwaway defaults domain so tests never touch the real preferences.
     private func freshStore() -> UserDefaults {
-        let name = "runcat.tests.\(UUID().uuidString)"
+        let name = "vitals.tests.\(UUID().uuidString)"
         let store = UserDefaults(suiteName: name)!
         store.removePersistentDomain(forName: name)
         return store

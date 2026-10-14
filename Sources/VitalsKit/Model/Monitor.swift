@@ -59,7 +59,7 @@ public final class Monitor {
     }
 
     @ObservationIgnored private var timer: DispatchSourceTimer?
-    @ObservationIgnored private let queue = DispatchQueue(label: "runcat.sampler", qos: .utility)
+    @ObservationIgnored private let queue = DispatchQueue(label: "vitals.sampler", qos: .utility)
     @ObservationIgnored private let sampler: Sampler
     @ObservationIgnored private var interval: TimeInterval
 

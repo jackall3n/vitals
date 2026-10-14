@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import RunCatKit
+@testable import VitalsKit
 
 @Suite struct HistoryTests {
     let t0 = Date(timeIntervalSince1970: 1_000_000)

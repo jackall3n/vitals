@@ -213,12 +213,12 @@ struct DashboardView: View {
             HStack(spacing: 5) {
                 Image(systemName: "gauge.with.dots.needle.33percent")
                     .font(.system(size: 11, weight: .semibold))
-                Text("RunCat").font(.subheadline.weight(.semibold))
+                Text("Vitals").font(.subheadline.weight(.semibold))
             }
             .foregroundStyle(.secondary)
             Spacer()
             FooterButton(symbol: "gearshape.fill", help: "Settings", action: openSettings)
-            FooterButton(symbol: "power", help: "Quit RunCat", action: quit)
+            FooterButton(symbol: "power", help: "Quit Vitals", action: quit)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)

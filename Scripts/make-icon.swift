@@ -5,7 +5,7 @@
 import AppKit
 
 let output = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "Resources/AppIcon.icns"
-let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("RunCatIcon-\(UUID().uuidString)")
+let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("VitalsIcon-\(UUID().uuidString)")
 let iconset = tmp.appendingPathComponent("AppIcon.iconset")
 try! FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
 

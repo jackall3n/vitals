@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import RunCatKit
+@testable import VitalsKit
 
 @Suite struct DiskReaderTests {
     @Test func computesRatesAndCapacity() {

@@ -1,5 +1,5 @@
 import Testing
-@testable import RunCatKit
+@testable import VitalsKit
 
 @Suite struct GPUReaderTests {
     @Test func parsesPerformanceStatistics() {

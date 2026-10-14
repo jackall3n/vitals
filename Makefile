@@ -1,7 +1,7 @@
-# RunCat — menu bar system monitor. Builds with the command-line tools only (no Xcode).
+# Vitals — menu bar system monitor. Builds with the command-line tools only (no Xcode).
 
-APP_NAME     := RunCat
-BUNDLE_ID    := com.jackallen.runcat
+APP_NAME     := Vitals
+BUNDLE_ID    := com.jackallen.vitals
 SIGN_ID      := RunCat Local
 VERSION      := 0.1.0
 BUILD_DIR    := build
@@ -37,7 +37,7 @@ app: release
 	sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@BUNDLE_ID@/$(BUNDLE_ID)/g' Resources/Info.plist > "$(CONTENTS)/Info.plist"
 	@if [ -f Resources/AppIcon.icns ]; then cp Resources/AppIcon.icns "$(CONTENTS)/Resources/"; fi
 	codesign --force --sign "$(SIGN_ID)" --identifier "$(BUNDLE_ID)" --options runtime \
-		--entitlements Resources/RunCat.entitlements "$(APP)"
+		--entitlements Resources/Vitals.entitlements "$(APP)"
 	codesign --verify --deep --strict "$(APP)"
 	@echo "Built $(APP)"
 

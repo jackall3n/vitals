@@ -53,7 +53,7 @@ struct SettingsView: View {
                     Toggle("", isOn: $settings.openAtLogin).labelsHidden().toggleStyle(.switch).controlSize(.small)
                 }
                 if !LoginItem.isRunningFromBundle {
-                    Text("Only available when running from RunCat.app.")
+                    Text("Only available when running from Vitals.app.")
                         .font(.caption2).foregroundStyle(.tertiary)
                 }
             }

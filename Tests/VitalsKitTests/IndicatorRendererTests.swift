@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import RunCatKit
+@testable import VitalsKit
 
 @Suite struct IndicatorRendererTests {
     typealias Bar = IndicatorRenderer.Bar

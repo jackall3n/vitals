@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import RunCatKit
+@testable import VitalsKit
 
 @Suite @MainActor struct MonitorTests {
     @Test func synchronousSamplesPopulateSnapshotAndHistories() async throws {
