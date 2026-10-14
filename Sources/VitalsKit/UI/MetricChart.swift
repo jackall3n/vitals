@@ -85,9 +85,13 @@ struct ScrollingCanvas: View {
 
     @State private var phase: CGFloat = 0
 
+    /// `-Screenshot` mode captures the view with `CALayer.render(in:)`, which yields a blank
+    /// image while a transform animation is running, so the slide is disabled there.
+    static let slideEnabled = UserDefaults.standard.string(forKey: "Screenshot") == nil
+
     var body: some View {
         GeometryReader { geo in
-            let lead = geo.size.width * CGFloat(interval / window)
+            let lead = Self.slideEnabled ? geo.size.width * CGFloat(interval / window) : 0
             Canvas(rendersAsynchronously: false) { ctx, size in
                 ctx.clip(to: Path(CGRect(origin: .zero, size: size)))
                 draw(&ctx, size, lead)
@@ -95,6 +99,7 @@ struct ScrollingCanvas: View {
             .frame(width: geo.size.width + lead, height: geo.size.height)
             .offset(x: phase)
             .onChange(of: latest, initial: true) { _, _ in
+                guard Self.slideEnabled else { return }
                 var snap = Transaction()
                 snap.disablesAnimations = true
                 withTransaction(snap) { phase = 0 }

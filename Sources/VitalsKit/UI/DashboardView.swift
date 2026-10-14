@@ -125,11 +125,9 @@ struct DashboardView: View {
         case .discharging:
             parts.append("draining \(rate)")
             if let m = b.minutesRemaining { parts.append("\(Format.duration(minutes: m)) left") }
-        case .full:
-            parts.append("charged")
-            if let adapter = b.adapterWatts { parts.append("\(Int(adapter)) W adapter") }
-        case .acNotCharging:
-            parts.append("on power")
+        case .full, .acNotCharging:
+            // At 100% "charged" is implied; otherwise say why it isn't charging.
+            if b.state == .acNotCharging { parts.append("not charging") }
             if let adapter = b.adapterWatts { parts.append("\(Int(adapter)) W adapter") }
         }
         return parts.joined(separator: " · ")
@@ -270,6 +268,7 @@ struct CompactCard<ChartContent: View>: View {
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
                     .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                     .truncationMode(.tail)
             }
         }
