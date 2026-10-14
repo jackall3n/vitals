@@ -85,9 +85,8 @@ struct ScrollingCanvas: View {
 
     @State private var phase: CGFloat = 0
 
-    /// `-Screenshot` mode captures the view with `CALayer.render(in:)`, which yields a blank
-    /// image while a transform animation is running, so the slide is disabled there.
-    static let slideEnabled = UserDefaults.standard.string(forKey: "Screenshot") == nil
+    /// Offline screenshot rendering takes one snapshot, so the slide is skipped there.
+    static let slideEnabled = !DevFlags.screenshotMode
 
     var body: some View {
         GeometryReader { geo in

@@ -36,7 +36,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             // `-ScreenshotDelay <seconds>` lets the graphs accumulate history first.
             let delay = max(2.5, UserDefaults.standard.double(forKey: "ScreenshotDelay"))
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [self] in
-                Screenshotter.run(into: dir, statusItem: statusItem)
+                Screenshotter.run(into: dir, statusItem: statusItem, monitor: monitor, settings: settings)
             }
         }
     }

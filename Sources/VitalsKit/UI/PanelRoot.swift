@@ -51,12 +51,17 @@ struct FittedScrollView<Content: View>: View {
     @State private var contentHeight: CGFloat = 0
 
     var body: some View {
-        ScrollView(.vertical) {
+        if DevFlags.screenshotMode {
+            // Offline rendering can't wait for the measurement below; show everything unscrolled.
             content
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+        } else {
+            ScrollView(.vertical) {
+                content
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(height: min(max(contentHeight, 1), maxHeight))
         }
-        .scrollBounceBehavior(.basedOnSize)
-        .frame(height: min(max(contentHeight, 1), maxHeight))
     }
 }
 
