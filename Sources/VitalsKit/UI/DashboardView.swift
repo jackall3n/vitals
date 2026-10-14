@@ -11,6 +11,7 @@ struct DashboardView: View {
     @State private var processSort: ProcessSort = .cpu
 
     private var window: TimeInterval { settings.graphWindow.seconds }
+    private var interval: TimeInterval { settings.refreshInterval.seconds }
     private var s: MonitorSnapshot { monitor.snapshot }
     private var h: Histories { monitor.histories }
 
@@ -45,7 +46,7 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 let total = s.cpu?.total ?? 0
                 CardHeader(symbol: "cpu", title: "CPU", value: Format.percent(total))
-                AreaChart(points: h.cpuTotal.window(window), window: window, tint: settings.level(for: total).tint)
+                AreaChart(points: h.cpuTotal.window(window), window: window, interval: interval, tint: settings.level(for: total).tint)
                 if let cpu = s.cpu {
                     HStack(spacing: 10) {
                         ForEach(Array(cpu.levels.enumerated()), id: \.offset) { i, level in
@@ -66,7 +67,7 @@ struct DashboardView: View {
                 let pressure = m?.pressure ?? 0
                 let level = settings.level(for: pressure)
                 CardHeader(symbol: "memorychip", title: "Memory", value: Format.percent(pressure), detail: "pressure")
-                AreaChart(points: h.memoryPressure.window(window), window: window, tint: level.tint)
+                AreaChart(points: h.memoryPressure.window(window), window: window, interval: interval, tint: level.tint)
                 if let m {
                     let total = Double(m.totalBytes)
                     SegmentedBar(segments: [
@@ -100,7 +101,7 @@ struct DashboardView: View {
         let g = s.gpu?.utilization ?? 0
         return CompactCard(symbol: "cube", title: "GPU", value: Format.percent(g),
                            footnote: s.gpu.map { "\(Format.bytes($0.allocatedBytes)) allocated" } ?? "—") {
-            AreaChart(points: h.gpu.window(window), window: window, tint: settings.level(for: g).tint, height: 30)
+            AreaChart(points: h.gpu.window(window), window: window, interval: interval, tint: settings.level(for: g).tint, height: 30)
         }
     }
 
@@ -109,7 +110,7 @@ struct DashboardView: View {
         return CompactCard(symbol: b?.externalPower == true ? "bolt.fill" : "battery.75percent", title: "Power", tint: .green,
                            value: Format.watts(b?.systemPowerWatts ?? 0),
                            footnote: b.map(batteryFootnote) ?? "—") {
-            AreaChart(points: h.systemPower.window(window), window: window, tint: .green, yMax: nil, height: 30)
+            AreaChart(points: h.systemPower.window(window), window: window, interval: interval, tint: .green, yMax: nil, height: 30)
         }
     }
 
@@ -141,7 +142,7 @@ struct DashboardView: View {
             DualLineChart(series: [
                 .init(name: "Down", points: h.networkDown.window(window), tint: .accentColor),
                 .init(name: "Up", points: h.networkUp.window(window), tint: .secondary),
-            ], window: window, height: 30)
+            ], window: window, interval: interval, height: 30)
         }
     }
 
@@ -152,7 +153,7 @@ struct DashboardView: View {
             DualLineChart(series: [
                 .init(name: "Read", points: h.diskRead.window(window), tint: .accentColor),
                 .init(name: "Write", points: h.diskWrite.window(window), tint: .secondary),
-            ], window: window, height: 30)
+            ], window: window, interval: interval, height: 30)
         }
     }
 

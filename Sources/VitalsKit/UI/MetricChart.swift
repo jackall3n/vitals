@@ -4,14 +4,23 @@ import SwiftUI
 /// at the right edge. Shared by the chart views below; drawn with Canvas so a tick costs one
 /// CoreGraphics pass rather than a Swift Charts layout.
 enum Sparkline {
-    static func mappedPoints(_ points: [HistoryPoint], window: TimeInterval, upper: Double, size: CGSize) -> [CGPoint] {
+    /// Maps `window` seconds ending at the newest point onto `size.width`, except that the newest
+    /// point sits `lead` points short of the right edge and the line is extended flat to the edge.
+    /// `ScrollingCanvas` slides the drawing left by `lead` over one refresh interval, so the
+    /// extension is what's visible while the next sample is pending.
+    static func mappedPoints(_ points: [HistoryPoint], window: TimeInterval, upper: Double, size: CGSize, lead: CGFloat = 0) -> [CGPoint] {
         guard let last = points.last, window > 0, upper > 0 else { return [] }
+        let plotWidth = size.width - lead
         let start = last.time.timeIntervalSinceReferenceDate - window
-        return points.map { p in
-            let x = CGFloat((p.time.timeIntervalSinceReferenceDate - start) / window) * size.width
+        var mapped = points.map { p in
+            let x = CGFloat((p.time.timeIntervalSinceReferenceDate - start) / window) * plotWidth
             let y = size.height - CGFloat(min(1, max(0, p.value / upper))) * size.height
-            return CGPoint(x: max(0, min(size.width, x)), y: y)
+            return CGPoint(x: max(0, min(plotWidth, x)), y: y)
         }
+        if lead > 0, let tip = mapped.last {
+            mapped.append(CGPoint(x: size.width, y: tip.y))
+        }
+        return mapped
     }
 
     /// Catmull-Rom spline converted to cubic Béziers; drawing is clipped to the chart bounds so
@@ -47,8 +56,8 @@ enum Sparkline {
     }
 
     static func draw(_ ctx: inout GraphicsContext, points: [HistoryPoint], window: TimeInterval, upper: Double,
-                     size: CGSize, tint: Color, fillOpacity: Double) {
-        let pts = mappedPoints(points, window: window, upper: upper, size: size)
+                     size: CGSize, lead: CGFloat, tint: Color, fillOpacity: Double) {
+        let pts = mappedPoints(points, window: window, upper: upper, size: size, lead: lead)
         guard !pts.isEmpty else { return }
         let line = path(through: pts)
         let area = area(under: line, points: pts, height: size.height)
@@ -62,10 +71,46 @@ enum Sparkline {
     }
 }
 
-/// A compact area chart with no axes, pinned so the newest sample sits at the right edge.
+/// Hosts a Canvas one refresh interval wider than the visible area and slides it left by that
+/// amount over the interval, so each new sample glides in instead of the whole line jumping.
+/// The slide is a transform animation handled by the compositor; the Canvas itself redraws
+/// only when a sample arrives.
+struct ScrollingCanvas: View {
+    /// Time of the newest sample; a change restarts the slide.
+    var latest: Date?
+    var interval: TimeInterval
+    var window: TimeInterval
+    var height: CGFloat
+    var draw: (inout GraphicsContext, CGSize, CGFloat) -> Void
+
+    @State private var phase: CGFloat = 0
+
+    var body: some View {
+        GeometryReader { geo in
+            let lead = geo.size.width * CGFloat(interval / window)
+            Canvas(rendersAsynchronously: false) { ctx, size in
+                ctx.clip(to: Path(CGRect(origin: .zero, size: size)))
+                draw(&ctx, size, lead)
+            }
+            .frame(width: geo.size.width + lead, height: geo.size.height)
+            .offset(x: phase)
+            .onChange(of: latest, initial: true) { _, _ in
+                var snap = Transaction()
+                snap.disablesAnimations = true
+                withTransaction(snap) { phase = 0 }
+                withAnimation(.linear(duration: interval)) { phase = -lead }
+            }
+        }
+        .frame(height: height)
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
+}
+
+/// A compact area chart with no axes; the newest sample scrolls in at the right edge.
 struct AreaChart: View {
     var points: [HistoryPoint]
     var window: TimeInterval
+    var interval: TimeInterval = 1
     var tint: Color = .accentColor
     /// Upper bound of the y axis. `nil` scales to the data.
     var yMax: Double? = 1
@@ -78,12 +123,9 @@ struct AreaChart: View {
     }
 
     var body: some View {
-        Canvas(rendersAsynchronously: false) { ctx, size in
-            ctx.clip(to: Path(CGRect(origin: .zero, size: size)))
-            Sparkline.draw(&ctx, points: points, window: window, upper: upper, size: size, tint: tint, fillOpacity: 0.35)
+        ScrollingCanvas(latest: points.last?.time, interval: interval, window: window, height: height) { ctx, size, lead in
+            Sparkline.draw(&ctx, points: points, window: window, upper: upper, size: size, lead: lead, tint: tint, fillOpacity: 0.35)
         }
-        .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 }
 
@@ -98,6 +140,7 @@ struct DualLineChart: View {
 
     var series: [Series]
     var window: TimeInterval
+    var interval: TimeInterval = 1
     var height: CGFloat = 40
 
     private var upper: Double {
@@ -106,15 +149,12 @@ struct DualLineChart: View {
     }
 
     var body: some View {
-        Canvas(rendersAsynchronously: false) { ctx, size in
-            ctx.clip(to: Path(CGRect(origin: .zero, size: size)))
+        ScrollingCanvas(latest: series.first?.points.last?.time, interval: interval, window: window, height: height) { ctx, size, lead in
             // Draw the secondary series first so the primary sits on top.
             for s in series.reversed() {
-                Sparkline.draw(&ctx, points: s.points, window: window, upper: upper, size: size, tint: s.tint, fillOpacity: 0.25)
+                Sparkline.draw(&ctx, points: s.points, window: window, upper: upper, size: size, lead: lead, tint: s.tint, fillOpacity: 0.25)
             }
         }
-        .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 }
 
