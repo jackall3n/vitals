@@ -5,21 +5,21 @@ CPU load, memory pressure and GPU use at a glance; clicking them opens a glass p
 graphs for CPU (per performance level and per core), memory composition and swap, GPU, network,
 disk, power and the top processes.
 
-Built with Swift 6.4 and the Xcode Command Line Tools only — no Xcode required.
+Built with Swift 6.4 and the Xcode Command Line Tools only — no Xcode required. Tasks run with [go-task](https://taskfile.dev) (`brew install go-task`).
 
 ## Build
 
 ```sh
-make test         # run the Swift Testing suite
-make app          # build/Vitals.app, signed with the "RunCat Local" certificate
-make install      # copy to /Applications and launch
-make screenshots  # render the indicator, panel and settings to build/screenshots/*.png
+task test         # run the Swift Testing suite
+task app          # build/Vitals.app, signed with the "RunCat Local" certificate
+task install      # copy to /Applications and launch
+task screenshots  # render the indicator, panel and settings to build/screenshots/*.png
 ```
 
-The Makefile pins the macOS 26.5 SDK because the 27.0 SDK bundled with the CLT needs a SwiftUI
+The Taskfile pins the macOS 26.5 SDK because the 27.0 SDK bundled with the CLT needs a SwiftUI
 macro plugin the CLT doesn't ship, and passes the Swift Testing macro plugin explicitly.
 
-To use a different signing identity, run `make app SIGN_ID="Your Identity"`.
+To use a different signing identity, run `task app SIGN_ID="Your Identity"`.
 
 ## Layout
 
