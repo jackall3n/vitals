@@ -1,2 +1,5 @@
 import RunCatKit
-print("RunCat launcher placeholder")
+
+MainActor.assumeIsolated {
+    RunCatApp.main()
+}

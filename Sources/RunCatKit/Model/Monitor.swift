@@ -52,14 +52,22 @@ public final class Monitor {
     public let topology: CPUTopology
     public var isRunning: Bool { timer != nil }
 
+    /// Process enumeration is the costliest reader and only feeds the panel, so it's skipped
+    /// while the panel is closed.
+    public var includeProcesses = false {
+        didSet { sampler.includeProcesses = includeProcesses }
+    }
+
     @ObservationIgnored private var timer: DispatchSourceTimer?
     @ObservationIgnored private let queue = DispatchQueue(label: "runcat.sampler", qos: .utility)
     @ObservationIgnored private let sampler: Sampler
     @ObservationIgnored private var interval: TimeInterval
 
-    public init(interval: TimeInterval = 1) {
+    public init(interval: TimeInterval = 1, includeProcesses: Bool = false) {
         self.interval = interval
+        self.includeProcesses = includeProcesses
         sampler = Sampler()
+        sampler.includeProcesses = includeProcesses
         topology = sampler.cpu.topology
         histories.cpuLevels = topology.levels.map { _ in History() }
     }
@@ -137,7 +145,7 @@ public final class Monitor {
     }
 }
 
-/// Owns the stateful readers; safe to call from the sampling queue only.
+/// Owns the stateful readers; `sample()` must only run on the sampling queue.
 final class Sampler: @unchecked Sendable {
     let cpu = CPUReader()
     let memory = MemoryReader()
@@ -146,6 +154,9 @@ final class Sampler: @unchecked Sendable {
     let disk = DiskReader()
     let battery = BatteryReader()
     let processes = ProcessReader(limit: 5)
+    /// Read on the sampling queue, written from the main actor; a stale read only delays the
+    /// process list by one tick.
+    var includeProcesses = false
 
     func sample() -> MonitorSnapshot {
         let now = Date()
@@ -157,7 +168,7 @@ final class Sampler: @unchecked Sendable {
             network: network.sample(now: now),
             disk: disk.sample(now: now),
             battery: battery.sample(),
-            processes: processes.sample(now: now)
+            processes: includeProcesses ? processes.sample(now: now) : nil
         )
     }
 }

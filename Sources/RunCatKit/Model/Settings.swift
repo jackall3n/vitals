@@ -84,7 +84,8 @@ public final class Settings {
         let rawMetrics = store.stringArray(forKey: Key.indicatorMetrics) ?? []
         let metrics = rawMetrics.compactMap(IndicatorMetric.init(rawValue:))
         indicatorMetrics = store.object(forKey: Key.indicatorMetrics) == nil ? IndicatorMetric.allCases : metrics
-        showCPUText = store.object(forKey: Key.showCPUText) as? Bool ?? true
+        // Off by default: a changing number makes the status item's width jitter.
+        showCPUText = store.object(forKey: Key.showCPUText) as? Bool ?? false
         refreshInterval = RefreshInterval(rawValue: store.integer(forKey: Key.refreshInterval)) ?? .oneSecond
         graphWindow = GraphWindow(rawValue: store.integer(forKey: Key.graphWindow)) ?? .oneMinute
         warningThreshold = store.object(forKey: Key.warningThreshold) as? Double ?? Self.defaultWarningThreshold
@@ -108,7 +109,7 @@ public final class Settings {
     public func resetToDefaults() {
         openAtLogin = true
         indicatorMetrics = IndicatorMetric.allCases
-        showCPUText = true
+        showCPUText = false
         refreshInterval = .oneSecond
         graphWindow = .oneMinute
         warningThreshold = Self.defaultWarningThreshold

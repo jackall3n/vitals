@@ -4,7 +4,7 @@ import Testing
 
 @Suite @MainActor struct MonitorTests {
     @Test func synchronousSamplesPopulateSnapshotAndHistories() async throws {
-        let monitor = Monitor(interval: 1)
+        let monitor = Monitor(interval: 1, includeProcesses: true)
         #expect(!monitor.isRunning)
         #expect(monitor.histories.cpuLevels.count == monitor.topology.levels.count)
 
@@ -37,6 +37,19 @@ import Testing
         monitor.sampleNow()
         #expect(monitor.snapshot.cpu != nil)
         #expect(monitor.snapshot.cpu?.perCore.count == before.perCore.count)
+    }
+
+    @Test func processesAreSkippedUntilRequested() async throws {
+        let monitor = Monitor(interval: 1)
+        monitor.sampleNow()
+        try await Task.sleep(for: .milliseconds(50))
+        monitor.sampleNow()
+        #expect(monitor.snapshot.processes == nil)
+        monitor.includeProcesses = true
+        monitor.sampleNow() // primes the process reader
+        try await Task.sleep(for: .milliseconds(50))
+        monitor.sampleNow()
+        #expect(monitor.snapshot.processes != nil)
     }
 
     @Test func timerDeliversSamplesOnMainActor() async throws {

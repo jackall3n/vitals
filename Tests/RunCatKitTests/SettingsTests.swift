@@ -15,7 +15,7 @@ import Testing
         let s = Settings(store: freshStore())
         #expect(s.openAtLogin)
         #expect(s.indicatorMetrics == [.cpu, .memory, .gpu])
-        #expect(s.showCPUText)
+        #expect(!s.showCPUText)
         #expect(s.refreshInterval == .oneSecond)
         #expect(s.graphWindow == .oneMinute)
         #expect(s.warningThreshold == 0.6)
@@ -29,7 +29,7 @@ import Testing
         let a = Settings(store: store)
         a.openAtLogin = false
         a.indicatorMetrics = [.gpu, .cpu]
-        a.showCPUText = false
+        a.showCPUText = true
         a.refreshInterval = .fiveSeconds
         a.graphWindow = .fiveMinutes
         a.warningThreshold = 0.5
@@ -40,7 +40,7 @@ import Testing
         let b = Settings(store: store)
         #expect(!b.openAtLogin)
         #expect(b.indicatorMetrics == [.gpu, .cpu])
-        #expect(!b.showCPUText)
+        #expect(b.showCPUText)
         #expect(b.refreshInterval == .fiveSeconds)
         #expect(b.graphWindow == .fiveMinutes)
         #expect(b.warningThreshold == 0.5)
