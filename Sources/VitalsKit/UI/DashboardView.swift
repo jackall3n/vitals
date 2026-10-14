@@ -113,18 +113,25 @@ struct DashboardView: View {
         }
     }
 
+    /// e.g. "82% · charging 24.6 W · 45 min to full" or "61% · draining 9.1 W · 4h 10m left".
     private func batteryFootnote(_ b: BatterySample) -> String {
-        let state: String
+        let rate = Format.watts(abs(b.batteryPowerWatts))
+        var parts = [Format.percent(b.charge)]
         switch b.state {
-        case .charging: state = b.minutesRemaining.map { "\(Format.duration(minutes: $0)) to full" } ?? "charging"
-        case .discharging: state = b.minutesRemaining.map { "\(Format.duration(minutes: $0)) left" } ?? "on battery"
-        case .full: state = "charged"
-        case .acNotCharging: state = "on power"
+        case .charging:
+            parts.append("charging \(rate)")
+            if let m = b.minutesRemaining { parts.append("\(Format.duration(minutes: m)) to full") }
+        case .discharging:
+            parts.append("draining \(rate)")
+            if let m = b.minutesRemaining { parts.append("\(Format.duration(minutes: m)) left") }
+        case .full:
+            parts.append("charged")
+            if let adapter = b.adapterWatts { parts.append("\(Int(adapter)) W adapter") }
+        case .acNotCharging:
+            parts.append("on power")
+            if let adapter = b.adapterWatts { parts.append("\(Int(adapter)) W adapter") }
         }
-        if let adapter = b.adapterWatts, b.externalPower {
-            return "\(Format.percent(b.charge)) · \(state) · \(Int(adapter)) W adapter"
-        }
-        return "\(Format.percent(b.charge)) · \(state)"
+        return parts.joined(separator: " · ")
     }
 
     private var networkCard: some View {
