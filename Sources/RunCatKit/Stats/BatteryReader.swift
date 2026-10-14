@@ -35,17 +35,32 @@ public struct BatterySample: Equatable, Sendable {
 }
 
 /// Reads the `AppleSmartBattery` registry entry. Returns `nil` on machines without a battery.
-public struct BatteryReader {
-    public init() {}
+public final class BatteryReader {
+    private let service: io_service_t
+    /// Only these keys are copied per sample; the full property dictionary carries large
+    /// diagnostic blobs that would cost far more to marshal every second.
+    static let keys = ["CurrentCapacity", "MaxCapacity", "ExternalConnected", "IsCharging", "FullyCharged",
+                       "InstantAmperage", "Amperage", "Voltage", "TimeRemaining", "CycleCount", "DesignCapacity",
+                       "AppleRawMaxCapacity", "PowerTelemetryData", "AdapterDetails"]
+
+    public init() {
+        service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
+    }
+
+    deinit {
+        if service != 0 { IOObjectRelease(service) }
+    }
 
     public func sample() -> BatterySample? {
-        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
         guard service != 0 else { return nil }
-        defer { IOObjectRelease(service) }
-        var props: Unmanaged<CFMutableDictionary>?
-        guard IORegistryEntryCreateCFProperties(service, &props, kCFAllocatorDefault, 0) == KERN_SUCCESS,
-              let dict = props?.takeRetainedValue() as? [String: Any] else { return nil }
-        return Self.parse(dict)
+        var props: [String: Any] = [:]
+        for key in Self.keys {
+            if let value = IORegistryEntryCreateCFProperty(service, key as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() {
+                props[key] = value
+            }
+        }
+        guard props["CurrentCapacity"] != nil else { return nil }
+        return Self.parse(props)
     }
 
     static func parse(_ p: [String: Any]) -> BatterySample {

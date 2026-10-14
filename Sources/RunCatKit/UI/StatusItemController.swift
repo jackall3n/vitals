@@ -10,6 +10,9 @@ public final class StatusItemController {
     private let monitor: Monitor
     private let settings: Settings
     let panelHost = PanelHost()
+    /// What the status item currently shows, so identical ticks don't trigger a redraw.
+    private var renderedKey: [Int] = []
+    private var renderedTitle = ""
 
     public init(monitor: Monitor, settings: Settings) {
         self.monitor = monitor
@@ -59,17 +62,27 @@ public final class StatusItemController {
             }
             return IndicatorRenderer.Bar(load: load, level: settings.level(for: load))
         }
-        button.image = IndicatorRenderer.render(bars: bars, appearance: button.effectiveAppearance)
+        // Bars are drawn at whole-point heights, so quantise before deciding whether to redraw.
+        let appearanceIsDark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let key = bars.flatMap { [Int(($0.load * 12).rounded()), $0.level == .normal ? 0 : ($0.level == .warning ? 1 : 2)] }
+            + [appearanceIsDark ? 1 : 0]
+        if key != renderedKey {
+            renderedKey = key
+            button.image = IndicatorRenderer.render(bars: bars, appearance: button.effectiveAppearance)
+        }
 
+        var title = ""
         if settings.showCPUText, let cpu = snapshot.cpu {
             // Figure spaces keep "7%" as wide as "100%" so the item never shifts its neighbours.
             let text = "\(Int((cpu.total * 100).rounded()))%"
-            button.title = String(repeating: "\u{2007}", count: max(0, 4 - text.count)) + text
-        } else {
-            button.title = ""
+            title = String(repeating: "\u{2007}", count: max(0, 4 - text.count)) + text
         }
-        if button.image == nil && button.title.isEmpty {
-            button.title = "•" // never leave the item invisible
+        if bars.isEmpty && title.isEmpty {
+            title = "•" // never leave the item invisible
+        }
+        if title != renderedTitle {
+            renderedTitle = title
+            button.title = title
         }
     }
 

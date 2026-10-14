@@ -34,9 +34,17 @@ public final class DiskReader {
 
     private var previous: (Counters, Date)?
     public let volumePath: String
+    /// Block storage drivers, matched once. External drives that appear later aren't counted
+    /// until the next launch, which is an acceptable trade for not re-matching every second.
+    private let drivers: [io_service_t]
 
     public init(volumePath: String = "/") {
         self.volumePath = volumePath
+        drivers = IOKitServices.matching("IOBlockStorageDriver")
+    }
+
+    deinit {
+        drivers.forEach { IOObjectRelease($0) }
     }
 
     /// Returns `nil` on the first call, when no rate can be derived yet.
@@ -69,14 +77,9 @@ public final class DiskReader {
     }
 
     private func readCounters() -> Counters? {
-        var iterator: io_iterator_t = 0
-        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IOBlockStorageDriver"), &iterator) == KERN_SUCCESS else {
-            return nil
-        }
-        defer { IOObjectRelease(iterator) }
+        guard !drivers.isEmpty else { return nil }
         var counters = Counters(read: 0, write: 0)
-        while case let service = IOIteratorNext(iterator), service != 0 {
-            defer { IOObjectRelease(service) }
+        for service in drivers {
             guard let stats = IORegistryEntryCreateCFProperty(service, "Statistics" as CFString, kCFAllocatorDefault, 0)?
                 .takeRetainedValue() as? [String: Any] else { continue }
             counters.read &+= (stats["Bytes (Read)"] as? NSNumber)?.uint64Value ?? 0

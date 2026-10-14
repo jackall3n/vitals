@@ -18,19 +18,21 @@ public struct GPUSample: Equatable, Sendable {
 }
 
 /// Reads GPU utilisation from the IOAccelerator service's `PerformanceStatistics` dictionary.
-public struct GPUReader {
-    public init() {}
+/// The service handles are looked up once; each sample only copies the statistics property.
+public final class GPUReader {
+    private let services: [io_service_t]
+
+    public init() {
+        services = IOKitServices.matching("IOAccelerator")
+    }
+
+    deinit {
+        services.forEach { IOObjectRelease($0) }
+    }
 
     public func sample() -> GPUSample? {
-        var iterator: io_iterator_t = 0
-        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IOAccelerator"), &iterator) == KERN_SUCCESS else {
-            return nil
-        }
-        defer { IOObjectRelease(iterator) }
-
         var best: GPUSample?
-        while case let service = IOIteratorNext(iterator), service != 0 {
-            defer { IOObjectRelease(service) }
+        for service in services {
             guard let stats = IORegistryEntryCreateCFProperty(service, "PerformanceStatistics" as CFString, kCFAllocatorDefault, 0)?
                 .takeRetainedValue() as? [String: Any] else { continue }
             let sample = Self.parse(stats)
@@ -49,5 +51,21 @@ public struct GPUReader {
             tilerUtilization: pct("Tiler Utilization %"),
             allocatedBytes: (stats["Alloc system memory"] as? NSNumber)?.uint64Value ?? 0
         )
+    }
+}
+
+enum IOKitServices {
+    /// All services matching the class name. The caller owns the returned objects.
+    static func matching(_ className: String) -> [io_service_t] {
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching(className), &iterator) == KERN_SUCCESS else {
+            return []
+        }
+        defer { IOObjectRelease(iterator) }
+        var services: [io_service_t] = []
+        while case let service = IOIteratorNext(iterator), service != 0 {
+            services.append(service)
+        }
+        return services
     }
 }
